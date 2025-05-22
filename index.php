@@ -1,10 +1,12 @@
 <html>
+    <!-- index.php -->
     <head>
         <title> NutriMetric Index</title>
         <link rel="stylesheet" type="text/css" href="stylesheet.css">
+       
     </head>
     <body> <!-- navigation bar start-->
-        <div class="navbar">
+        <div class="navbar" class="section">
             <a>
                 <h2 class="logo">NutriMetric</h2>
             </a>
@@ -13,25 +15,29 @@
                 <a class="pd28" href="#aboutUs">About Us</a>
                 <a class="pd28" href="#utilities">Utilities</a>
             </nav>
-            <a href="contactUs.html" class="pd80">
+            <a href="#contactsection" class="pd80">
                 <button class="contactButton">
                     Contact Us
                 </button>
             </a>
         </div>
         <!--navigation bar end-->
+
+
         <!--landing text-->
-        <div id="home" class="landingpg">
+        <div id="home" class="landingpg" class="section">
         <br><br><br><br><br><br><br><br><br>
         <h1>Choose Health</h1>
         <h2 class="landingcap">Health Math Made Delicious!</h2>
-        <a href="bmiform.html">
-        <form>
-            <input type="button" value="Calculate BMI Now!"  class="buttonclick">
-        </form></a><br><br><br><br>
+        <a href="#utilities">
+            <button class="buttonclick"> Calculate BMI Now!</button>
+        </a><br><br><br><br>
     </div>
+    <!--landing text end-->
+
+
     <!--about us div-->
-            <div class="aboutUs" id="aboutUs"> 
+            <div class="aboutUs" id="aboutUs" class="section"> 
                 <h2>
                     About Us
                 </h2>
@@ -44,9 +50,12 @@
             </div>
             <div> <img src="images/aboutUs.jpg" class="abtImg"></div>
         </div>
-        <div class="utilitiesDiv">
+        <!--about us end-->
+
+
+        <div class="utilitiesDiv" class="section" id="utilities">
             <!--utilities-->
-            <div class="utilities" id="utilities"> 
+            <div class="utilities"> 
                 <h2>
                     Utilities
                 </h2>
@@ -60,72 +69,13 @@
                 </p>
             </div>
             </div>
-            <?php
-ob_start();
-session_start();
-$conn = new mysqli("localhost", "root", "", "nutrimetric");
 
-// BMI calculation logic
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST["insert"]) && !empty($_POST["height"]) && !empty($_POST["weight"])) {
-        $email = $_POST["email"];
-        $name = $_POST["name"];
-        $age = intval($_POST["age"]);
-        $height = floatval($_POST["height"]);
-        $weight = floatval($_POST["weight"]);
-        $phone = intval($_POST["phone"]);
-
-        if ($height > 0) {
-            $bmi = $weight / ($height * $height);
-            $bmiRounded = round($bmi, 2);
-
-            if ($bmi < 18.5) {
-                $class = "Underweight";
-            } elseif ($bmi < 25) {
-                $class = "Normal";
-            } else {
-                $class = "Overweight";
-            }
-
-            $stmt = $conn->prepare("SELECT id FROM bmi_results WHERE email = ?");
-            $stmt->bind_param("s", $email);
-            $stmt->execute();
-            $stmt->store_result();
-
-            if ($stmt->num_rows > 0) {
-                $stmt->close();
-                $stmt = $conn->prepare("UPDATE bmi_results SET name = ?, age = ?, phone = ?, height = ?, weight = ?, bmi = ?, class = ? WHERE email = ?");
-                $stmt->bind_param("siidddss", $name, $age, $phone, $height, $weight, $bmiRounded, $class, $email);
-                $stmt->execute();
-            } else {
-                $stmt->close();
-                $stmt = $conn->prepare("INSERT INTO bmi_results (name, age, email, phone, height, weight, bmi, class) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("sisiddds", $name, $age, $email, $phone, $height, $weight, $bmiRounded, $class);
-                $stmt->execute();
-            }
-            $stmt->close();
-
-            $_SESSION["bmi"] = $bmiRounded;
-            $_SESSION["class"] = $class;
-            header("Location: " . $_SERVER["PHP_SELF"]);
-            exit();
-        }
-    }
-
-   //searching logic
-    if (isset($_POST['search'])) {
-        $_SESSION['search_email'] = $_POST['email'];
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit();
-    }
-}
-?>
-<div class="pagediv">
+<div class="pagediv" id="bmiforms" >
   <!-- search form -->
-  <div class="form-wrapper">
+  
     <div class="form-container">
       <h2 class="plain">BMI Results</h2>
-      <form action="" method="post" id="bmiResult">
+      <form action="" method="post" id="bmiR">
         <div class="formdiv">
           <div>
             <label for="search-email">Email</label>
@@ -137,57 +87,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           <button type="reset">Reset</button>
         </div>
       </form>
+      <div id="dataContainer" class="plain"> </div>
     </div>
-
-    <div>
-        <!--search display-->
-      <?php
-      if (isset($_SESSION['search_email'])) {
-          $email = $_SESSION['search_email'];
-          $stmt = $conn->prepare("SELECT name, age, email, height, weight, bmi, class FROM bmi_results WHERE email = ?");
-          $stmt->bind_param("s", $email);
-          $stmt->execute();
-          $result = $stmt->get_result();
-
-          if ($result->num_rows > 0) {
-              echo "<table>
-                      <tr>
-                        <th>Name</th>
-                        <th>Age</th>
-                        <th>Email</th>
-                        <th>Height (m)</th>
-                        <th>Weight (kg)</th>
-                        <th>BMI</th>
-                        <th>Class</th>
-                      </tr>";
-              while ($row = $result->fetch_assoc()) {
-                  echo "<tr>
-                          <td>{$row['name']}</td>
-                          <td>{$row['age']}</td>
-                          <td>{$row['email']}</td>
-                          <td>{$row['height']}</td>
-                          <td>{$row['weight']}</td>
-                          <td>{$row['bmi']}</td>
-                          <td>{$row['class']}</td>
-                        </tr>";
-              }
-              echo "</table>";
-          } else {
-              echo "<p class='bmiRes'>No record found. Calculate your BMI.</p>";
-          }
-
-          $stmt->close();
-          unset($_SESSION['search_email']);
-      }
-      ?>
-    </div>
-  </div>
+<!--search form end-->
 
   <!-- BMI calculatorn form -->
-  <div class="form-wrapper">
     <div class="form-container">
       <h2 class="plain">BMI Calculator</h2>
-      <form action="" method="post" id="bmiCalculator">
+      <form action="" method="post" id="bmiC">
         <div class="formdiv">
           <div>
             Name <input type="text" name="name" placeholder="Name" id="name" required>
@@ -205,29 +112,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           <button type="reset">Reset</button>
         </div>
       </form>
-    
+    <div class="alert" class=plain></div>
   </div>
 
-  <!-- BMI result-->
- <div>  
-  <?php
-  if (isset($_SESSION["bmi"]) && isset($_SESSION["class"])) {
-      $bmi = $_SESSION["bmi"];
-      $class = $_SESSION["class"];
-      echo "<br><p class='bmiRes'>Your BMI is <strong>$bmi</strong>. Your weight is classified as <strong>$class</strong>.</p>";
-      unset($_SESSION["bmi"]);
-      unset($_SESSION["class"]);
-  }
-  ?>
-  </div>
-  </div>
 </div>
-
-<?php ob_end_flush(); ?>
+<!--calculation form end-->
 
 
        <!--healthy reads div start-->
-        <div class="container">
+        <div class="container" >
             
             <div class="item1"><br><br>
                 <h2> Healthy Reads</h2><br>
@@ -279,20 +172,63 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
          </div>
          <br><br><br>
+<div class="contact-section" id="contactsection">    
+    <br><br>
+    <div>
+       <h2> Send Us a Message!<h2>
+        <h3">Contact Us</h3><br>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone-icon lucide-phone">
+                <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>
+                +12 34567 89101<br><br>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail">
+                <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                contact@nutrimetric.com<br><br>
+                              
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin">
+                <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                 DHARMARAM COLLEGE, Hosur Main Road,<br> Bhavani Nagar, Post, Bengaluru,<br> Karnataka 560029
+    </div>     
+        <div class="form-container" style="margin-right:0;">
+  <h2 class="plain">Contact Us</h2>
+  <form action="" method="post" id="contact">
+    <div class="formdiv">
+      <div>
+        Name <input type="text" name="name" placeholder="Name" id="name" required>
+      </div>
+      <div>
+        Email <input type="email" name="email" placeholder="Email" required id="email">
+      </div>
+    </div>
+    <div class="message-container">
+      Message <br>
+      <textarea id="message" name="message" rows="3" placeholder="Message"></textarea>
+    </div>
+
+    <div class="button-group">
+      <button type="submit" name="insert">Submit</button>
+      <button type="reset">Reset</button>
+    </div>
+  </form>
+  <div class="alert plain"></div>
+</div>
+</div>
+<br><br>
 <!--footer start-->
-                <div class="footerD">
+     <div class="footerD">
      <footer>
          <div class="footerC"> 
-            <div  class="item item1"> <img src="images/footerLogo.png" class="footerLogo">
-                 <br>
+            <div  class="item item1">NutriMetric helps you make smarter health choices with<br> tools
+            like our BMI calculator and expert-backed content.<br> We simplify
+             nutrition so you can focus on feeling your best.
+                 <br><br>
                  <h2 class="footerL"> NutriMetric </h2>
             </div>
             <div class="item item2" class="footerNav">
                  <h3 class="plain">Quick Links</h3>
                 <nav  class="footerNav">
-                 <a  href="index.html">Home</a>
-                 <a href="index.html#aboutUs">About Us</a>
-                 <a  href="index.html#utilities">Utilities</a>
+                 <a  href="index.php">Home</a>
+                 <a href="index.php#aboutUs">About Us</a>
+                 <a  href="index.php#utilities">Utilities</a>
                 </nav>
             </div>
             <div class="item item3">
@@ -306,12 +242,87 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                               
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin">
                 <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
-                Ground Floor, Building, Street,<br>
-                Layout, City, State, Country. Pin-123456
+                 DHARMARAM COLLEGE, Hosur Main Road,<br> Bhavani Nagar, Post, Bengaluru,<br> Karnataka 560029
             </div>
                           
          </div>
      </footer>
  </div>  
+ 
+ <!--footer end-->
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ <script src="bootstrap.bundle.min.js"></script>
+ <script>
+// 1. js for bmi calculation
+  $(document).on('submit', '#bmiC', function(e){
+    e.preventDefault();
+    $.ajax({
+        type: "POST",
+        url: "datasubmit.php",
+        data: $(this).serialize(),
+        dataType: "json",
+        success: function(data){
+            //on success, this is run
+            let result = `<p class='bmiRes'>${data.msg}`;
+            if (data.bmi && data.class) {
+                result += `<br>Your BMI is <strong>${data.bmi}</strong>. Classification: <strong>${data.class}</strong>.</p>`;
+            } else {
+                result += `</p>`;
+            }
+            $('.alert').html(result);
+        },
+        error: function() {
+            //this runn on error
+            $('.alert').html("<p class='bmiRes'>Something went wrong. Please try again.</p>");
+        }
+    });
+});
+
+//2. js for bmi result retrieval
+$(document).on('submit', '#bmiR', function(e){
+    e.preventDefault();
+
+    $.ajax({
+        type: 'POST',
+        url: 'datafetch.php',
+        data: $(this).serialize(),
+        dataType: 'json',
+        success: function(data){
+            let output = '';
+            if (data.bmi && data.class) {
+                output = `<p class='bmiRes'>BMI: <strong>${data.bmi}</strong><br>Classification: <strong>${data.class}</strong></p>`;
+            } else if (data.error) {
+                output = `<p class='bmiRes'>${data.error}</p>`;
+            }
+            $('#dataContainer').html(output);
+        },
+        error: function(xhr, status, error){
+            $('#dataContainer').html('<p class="bmiRes">Error fetching details.</p>');
+            console.error("AJAX Error:", error);
+        }
+    });
+});
+
+//3. ajax for contact form
+$(document).on('submit', '#contact', function(e){
+    e.preventDefault();
+    $.ajax({
+        type: "POST",
+        url: "contactsubmit.php",
+        data: $(this).serialize(),
+        dataType: "json",
+        success: function(){
+            //on success, this is run
+            $('.alert').html("<p class='bmiRes'>Your message was recorded successfully.</p>");
+        },
+        error: function() {
+            //this runn on error
+            $('.alert').html("<p class='bmiRes'>Something went wrong. Please try again.</p>");
+        }
+    });
+});
+</script>
+
     </body>
 </html>
